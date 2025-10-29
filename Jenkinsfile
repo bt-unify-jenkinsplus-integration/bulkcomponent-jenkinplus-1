@@ -1,26 +1,56 @@
 pipeline {
     agent any
 
-    stages {
-        stage('Build') {
+    environment {
+        // You can set environment variables here
+        MAVEN_OPTS = "-Dmaven.test.failure.ignore=true"
+    }
+
+      tools {
+        maven 'Maven 3'  // Define your Maven installation name from Jenkins Global Tool Configuration
+    }
+
+   
+    stages {    
+       stage('Registering build artifact') {
             steps {
-                echo 'Building...'
-                sleep 2
+                echo 'Registering the metadata'
+                echo 'Another echo to make the pipeline a bit more complex'
+                registerBuildArtifactMetadata(
+                    name: "test-artifact-uma",
+                    version: "1.0.0",
+                    type: "docker",
+                    url: "http://non:1111",
+                    digest: "6f637064707039346163663237383938",
+                    label: "prod"
+                )
             }
         }
-        stage('Test') {
+        
+        stage('Build & Test') {
             steps {
-                echo 'Running tests...'
-                sleep 5
+                sh 'mvn clean test'
             }
         }
-        stage('Deploy') {
+
+        stage('Publish Test Results') {
             steps {
-                echo 'Deploying...'
-                sleep 2
-                 // Fail the build
-                error('Tests failed!')
+                junit 'target/surefire-reports/*.xml'
             }
+        }
+                
+    }
+     
+
+
+    post {
+        always {
+            echo 'Pipeline completed.'
+        }
+        failure {
+            echo 'Build or tests failed!'
         }
     }
 }
+  
+ 
